@@ -1,0 +1,104 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: 'Inter', sans-serif;
+  --font-hand: 'Patrick Hand', cursive;
+  /* Optional: would need import */
+
+  --color-diary-bg: #f8fafc;
+  --color-paper: #ffffff;
+
+  --color-marker-yellow: #fef08a;
+  /* yellow-200 */
+  --color-marker-pink: #fbcfe8;
+  /* pink-200 */
+  --color-marker-blue: #bae6fd;
+  /* sky-200 */
+}
+
+/* Custom Styles */
+body {
+  font-family: var(--font-sans);
+  background-color: var(--color-diary-bg);
+  color: #1e293b;
+  /* slate-800 */
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Notebook Pattern Background */
+.diary-pattern {
+  background-color: #f1f5f9;
+  background-image:
+    radial-gradient(#cbd5e1 1px, transparent 1px),
+    radial-gradient(#cbd5e1 1px, transparent 1px);
+  background-size: 20px 20px;
+  background-position: 0 0, 10px 10px;
+}
+
+/* Tape Effect */
+.tape-strip {
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  transform: translateX(-50%) rotate(-2deg);
+  width: 40px;
+  height: 12px;
+  background-color: rgba(255, 255, 255, 0.4);
+  background-image: linear-gradient(90deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.2) 20%,
+      transparent 50%,
+      rgba(255, 255, 255, 0.2) 80%,
+      transparent 100%);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  border-left: 1px dashed rgba(0, 0, 0, 0.05);
+  border-right: 1px dashed rgba(0, 0, 0, 0.05);
+  backdrop-filter: blur(1px);
+  z-index: 10;
+  opacity: 0.8;
+}
+
+/* Marker Highlight Effect */
+.marker-highlight {
+  position: relative;
+  z-index: 1;
+}
+
+.marker-highlight::after {
+  content: '';
+  position: absolute;
+  bottom: 2px;
+  left: -2px;
+  right: -2px;
+  height: 8px;
+  background-color: var(--color-marker-yellow);
+  z-index: -1;
+  opacity: 0.6;
+  border-radius: 2px;
+  transform: rotate(-1deg);
+}
+
+.marker-highlight.blue::after {
+  background-color: var(--color-marker-blue);
+}
+
+.marker-highlight.pink::after {
+  background-color: var(--color-marker-pink);
+}
+
+/* Card Rotation Randomness (applied via inline styles usually, but here for reference) */
+.rotate-1 {
+  transform: rotate(1deg);
+}
+
+.rotate-n1 {
+  transform: rotate(-1deg);
+}

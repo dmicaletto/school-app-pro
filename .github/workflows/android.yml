@@ -1,0 +1,125 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [ "main" ]
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Extract Version
+        id: version
+        run: |
+          if [[ $GITHUB_REF == refs/tags/* ]]; then
+            VERSION=${GITHUB_REF#refs/tags/v}
+            echo "VERSION=$VERSION" >> $GITHUB_ENV
+            echo "IS_RELEASE=true" >> $GITHUB_ENV
+          else
+            echo "VERSION=debug" >> $GITHUB_ENV
+            echo "IS_RELEASE=false" >> $GITHUB_ENV
+          fi
+          echo "Build Version: $VERSION"
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Ensure Capacitor CLI
+        run: npm install @capacitor/core @capacitor/cli @capacitor/android
+
+      - name: Build Web App
+        run: npm run build
+
+      - name: Init Capacitor (if needed)
+        run: |
+          if [ ! -f "capacitor.config.json" ] && [ ! -f "capacitor.config.ts" ]; then
+            npx cap init SchoolApp com.dmicaletto.schoolapp --web-dir dist
+          fi
+
+      - name: Add/Sync Android Platform
+        run: |
+          if [ ! -d "android" ]; then
+            npx cap add android
+          else
+            npx cap sync android
+          fi
+
+      - name: Bump Android Version
+        if: env.IS_RELEASE == 'true'
+        run: |
+          cd android/app
+          sed -i "s/versionName \".*\"/versionName \"${{ env.VERSION }}\"/" build.gradle
+          sed -i "s/versionCode .*/versionCode ${{ github.run_number }}/" build.gradle
+          echo "Versione aggiornata in build.gradle: ${{ env.VERSION }} (Code: ${{ github.run_number }})"
+
+      - name: Apply Kotlin Duplicate Classes Fix
+        run: |
+          cd android
+          echo "" >> build.gradle
+          echo "configurations.all {" >> build.gradle
+          echo "    resolutionStrategy.eachDependency { details ->" >> build.gradle
+          echo "        if (details.requested.group == 'org.jetbrains.kotlin' && details.requested.name.startsWith('kotlin-stdlib')) {" >> build.gradle
+          echo "            details.useVersion '1.8.22'" >> build.gradle
+          echo "        }" >> build.gradle
+          echo "    }" >> build.gradle
+          echo "}" >> build.gradle
+          
+          echo "" >> app/build.gradle
+          echo "dependencies {" >> app/build.gradle
+          echo "    modules {" >> app/build.gradle
+          echo "        module(\"org.jetbrains.kotlin:kotlin-stdlib-jdk7\") {" >> app/build.gradle
+          echo "            replacedBy(\"org.jetbrains.kotlin:kotlin-stdlib\", \"kotlin-stdlib-jdk7 is now part of kotlin-stdlib\")" >> app/build.gradle
+          echo "        }" >> app/build.gradle
+          echo "        module(\"org.jetbrains.kotlin:kotlin-stdlib-jdk8\") {" >> app/build.gradle
+          echo "            replacedBy(\"org.jetbrains.kotlin:kotlin-stdlib\", \"kotlin-stdlib-jdk8 is now part of kotlin-stdlib\")" >> app/build.gradle
+          echo "        }" >> app/build.gradle
+          echo "    }" >> app/build.gradle
+          echo "}" >> app/build.gradle
+
+      - name: Create google-services.json
+        env:
+          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
+        run: |
+          if [ -n "$GOOGLE_SERVICES_JSON" ]; then
+            echo "$GOOGLE_SERVICES_JSON" > android/app/google-services.json
+            echo "✅ google-services.json creato."
+          else
+            echo "⚠️ Segreto mancante. Creazione dummy file."
+            echo '{"project_info":{"project_number":"000000000000","project_id":"dummy","storage_bucket":"dummy"},"client":[{"client_info":{"mobilesdk_app_id":"1:000000000000:android:000000000000","android_client_info":{"package_name":"com.dmicaletto.schoolapp"}},"api_key":[{"current_key":"dummy"}]}]}' > android/app/google-services.json
+          fi
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          build-root-directory: android
+
+      - name: Build APK
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug --refresh-dependencies
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: SchoolApp-${{ env.VERSION }}
+          path: android/app/build/outputs/apk/debug/app-debug.apk

@@ -1,0 +1,21 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Configurazione pubblica (es. Gemini API key): lettura per utenti autenticati, scrittura bloccata
+    match /artifacts/{appId}/public/{document=**} {
+      allow read: if request.auth != null;
+      allow write: if false;
+    }
+
+    // Dati utente: accesso esclusivo al proprietario
+    match /artifacts/{appId}/users/{userId}/{document=**} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Fallback: blocca tutto il resto
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

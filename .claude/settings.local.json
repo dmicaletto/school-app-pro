@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__Claude_Preview__preview_start",
+      "Bash(npm --version)",
+      "Bash(npm install)",
+      "Bash(firebase projects:list)",
+      "Bash(npx firebase-tools projects:list)",
+      "Bash(npx firebase-tools firestore:rules --project homework-98001)",
+      "Bash(npx firebase-tools firestore:databases:get \"\\(default\\)\" --project homework-98001)",
+      "Bash(npx firebase-tools login:print-access-token --project homework-98001)",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); tokens=d.get\\(''tokens'',{}\\); print\\(tokens.get\\(''access_token'',''NON_TROVATO''\\)[:20] + ''...'' if tokens.get\\(''access_token''\\) else ''NON_TROVATO''\\)\")",
+      "Bash(node _read_rules.js)",
+      "Bash(npx firebase-tools deploy --only firestore:rules --project homework-98001)",
+      "Bash(echo \"EXIT: $?\")",
+      "Bash(node _write_gemini_key.cjs)"
+    ]
+  }
+}
